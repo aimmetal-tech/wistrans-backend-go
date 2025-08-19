@@ -49,6 +49,9 @@ func main() {
 	// Fetch接口
 	app.POST("/fetch", handlers.Fetch) // 网页内容抓取接口
 
+	// Web Search接口
+	app.POST("/web-search", handlers.WebSearch) // 联网搜索接口
+
 	// 启动服务
 	log.Println("服务器启动在端口 8080")
 	err = app.Run(":8080")

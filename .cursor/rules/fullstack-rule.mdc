@@ -1,0 +1,8 @@
+---
+description: 进行前后端对接等有关全栈的时候启用这个规则
+alwaysApply: false
+---
+
+<rule> 
+    不能自行启动前后端服务器，严令禁止
+</rule>

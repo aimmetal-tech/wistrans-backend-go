@@ -598,6 +598,20 @@ func (h *Handlers) MCP(c *gin.Context) {
 		Model:      req.Model,
 		MCPServers: responseServers,
 		Timestamp:  time.Now(),
+		Query:      req.Query,
+		Tool:       req.Tool,
+	}
+
+	// 如果指定了工具调用，执行相应的工具
+	if req.Tool != "" && req.Query != "" {
+		toolResult, err := h.executeMCPTool(req.Tool, req.Query, req.Params)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "工具调用失败: " + err.Error(),
+			})
+			return
+		}
+		response.ToolResult = toolResult
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -610,6 +624,151 @@ func getAvailableServerNames(servers map[string]models.MCPServer) []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// executeMCPTool 执行MCP工具调用
+func (h *Handlers) executeMCPTool(tool, query string, params map[string]interface{}) (interface{}, error) {
+	switch tool {
+	case "web-search":
+		return h.executeWebSearchTool(query, params)
+	case "fetch":
+		return h.executeFetchTool(query, params)
+	default:
+		return nil, fmt.Errorf("不支持的工具: %s", tool)
+	}
+}
+
+// executeWebSearchTool 执行联网搜索工具
+func (h *Handlers) executeWebSearchTool(query string, params map[string]interface{}) (interface{}, error) {
+	// 创建联网搜索客户端
+	webSearchClient, err := models.NewWebSearchClient()
+	if err != nil {
+		return nil, fmt.Errorf("创建联网搜索客户端失败: %v", err)
+	}
+
+	// 构造搜索请求
+	searchReq := models.WebSearchRequest{
+		Query: query,
+	}
+
+	// 设置默认值
+	if searchReq.MaxResults == 0 {
+		searchReq.MaxResults = 10
+	}
+	if searchReq.Language == "" {
+		searchReq.Language = "zh"
+	}
+	if searchReq.Region == "" {
+		searchReq.Region = "CN"
+	}
+	if searchReq.TimeRange == "" {
+		searchReq.TimeRange = "1y"
+	}
+
+	// 从params中提取参数
+	if params != nil {
+		if maxResults, ok := params["max_results"].(float64); ok {
+			searchReq.MaxResults = int(maxResults)
+		}
+		if language, ok := params["language"].(string); ok {
+			searchReq.Language = language
+		}
+		if region, ok := params["region"].(string); ok {
+			searchReq.Region = region
+		}
+		if timeRange, ok := params["time_range"].(string); ok {
+			searchReq.TimeRange = timeRange
+		}
+		if extraParams, ok := params["extra_params"].(map[string]interface{}); ok {
+			searchReq.ExtraParams = extraParams
+		}
+	}
+
+	// 执行搜索
+	response, err := webSearchClient.Search(searchReq)
+	if err != nil {
+		return nil, fmt.Errorf("执行联网搜索失败: %v", err)
+	}
+
+	return response, nil
+}
+
+// executeFetchTool 执行网页抓取工具
+func (h *Handlers) executeFetchTool(query string, params map[string]interface{}) (interface{}, error) {
+	// 从params中提取URL
+	url, ok := params["url"].(string)
+	if !ok {
+		return nil, fmt.Errorf("缺少必需的参数: url")
+	}
+
+	// 构造Fetch请求
+	fetchReq := models.FetchRequest{
+		URL: url,
+	}
+
+	// 设置默认值
+	if fetchReq.ContentType == "" {
+		fetchReq.ContentType = "news"
+	}
+	if fetchReq.MaxLength == 0 {
+		fetchReq.MaxLength = 5000
+	}
+	if fetchReq.Language == "" {
+		fetchReq.Language = "auto"
+	}
+
+	// 从params中提取参数
+	if params != nil {
+		if contentType, ok := params["content_type"].(string); ok {
+			fetchReq.ContentType = contentType
+		}
+		if maxLength, ok := params["max_length"].(float64); ok {
+			fetchReq.MaxLength = int(maxLength)
+		}
+		if language, ok := params["language"].(string); ok {
+			fetchReq.Language = language
+		}
+		if extractFields, ok := params["extract_fields"].([]interface{}); ok {
+			fields := make([]string, len(extractFields))
+			for i, field := range extractFields {
+				if str, ok := field.(string); ok {
+					fields[i] = str
+				}
+			}
+			fetchReq.ExtractFields = fields
+		}
+	}
+
+	// 如果没有指定提取字段，使用默认字段
+	if len(fetchReq.ExtractFields) == 0 {
+		fetchReq.ExtractFields = models.GetDefaultExtractFields(fetchReq.ContentType)
+	}
+
+	// 模拟调用Fetch MCP获取网页内容
+	webContent, err := h.fetchWebContent(fetchReq.URL, fetchReq.MaxLength)
+	if err != nil {
+		return nil, fmt.Errorf("抓取网页失败: %v", err)
+	}
+
+	// 调用LLM解析和提取结构化信息
+	parsedData, err := h.parseWebContentWithLLM(webContent, fetchReq)
+	if err != nil {
+		return nil, fmt.Errorf("解析网页内容失败: %v", err)
+	}
+
+	// 构造成功响应
+	response := models.FetchResponse{
+		URL:           fetchReq.URL,
+		Title:         parsedData.Title,
+		Content:       parsedData.Content,
+		Summary:       parsedData.Summary,
+		ExtractedData: parsedData.ExtractedData,
+		Language:      parsedData.Language,
+		Status:        "success",
+		FetchTime:     time.Now(),
+	}
+
+	return response, nil
 }
 
 // Fetch 网页内容抓取接口
@@ -817,4 +976,51 @@ func (h *Handlers) parseWebContentWithLLM(webContent string, req models.FetchReq
 		Language:      result.Language,
 		ExtractedData: result.ExtractedData,
 	}, nil
+}
+
+// WebSearch 联网搜索接口
+func (h *Handlers) WebSearch(c *gin.Context) {
+	var req models.WebSearchRequest
+
+	// 绑定请求参数
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	// 设置默认值
+	if req.MaxResults == 0 {
+		req.MaxResults = 10
+	}
+	if req.Language == "" {
+		req.Language = "zh"
+	}
+	if req.Region == "" {
+		req.Region = "CN"
+	}
+	if req.TimeRange == "" {
+		req.TimeRange = "1y"
+	}
+
+	// 创建联网搜索客户端
+	webSearchClient, err := models.NewWebSearchClient()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "创建联网搜索客户端失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 执行搜索
+	response, err := webSearchClient.Search(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "执行联网搜索失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
