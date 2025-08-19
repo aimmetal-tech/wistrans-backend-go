@@ -34,14 +34,20 @@ func main() {
 	app.GET("/health", handlers.HealthCheck)
 
 	// 会话相关接口
-	app.GET("/conversations", handlers.CreateConversation)              // 创建新会话
-	app.PATCH("/conversations/:id", handlers.UpdateConversation)        // 更新会话标题
-	app.GET("/conversations/detail", handlers.GetConversationDetail)    // 获取会话详情
-	app.GET("/conversations/history", handlers.GetConversationHistory)  // 获取会话历史记录
-	app.GET("/conversations/stream", handlers.StreamConversation)       // 流式对话接口
-	
+	app.GET("/conversations", handlers.CreateConversation)             // 创建新会话
+	app.PATCH("/conversations/:id", handlers.UpdateConversation)       // 更新会话标题
+	app.GET("/conversations/detail", handlers.GetConversationDetail)   // 获取会话详情
+	app.GET("/conversations/history", handlers.GetConversationHistory) // 获取会话历史记录
+	app.GET("/conversations/stream", handlers.StreamConversation)      // 流式对话接口
+
 	// 翻译接口
-	app.POST("/translate", handlers.Translate)                          // 网页翻译接口
+	app.POST("/translate", handlers.Translate) // 网页翻译接口
+
+	// MCP接口
+	app.POST("/mcp", handlers.MCP) // MCP服务接口
+
+	// Fetch接口
+	app.POST("/fetch", handlers.Fetch) // 网页内容抓取接口
 
 	// 启动服务
 	log.Println("服务器启动在端口 8080")

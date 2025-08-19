@@ -105,3 +105,41 @@
 将这两个接口实现后记得更新docs/api.md，遵循routes-rule.md规则
 ```
 
+### MCP支持
+```
+采用"扩展现有模型参数格式"，来添加对MCP的支持。现在开始进行代码的编写。
+```
+
+```
+{
+    "mcpServers": {
+        "github.com/github/github-mcp-server": {
+            "command": "docker",
+            "args": [
+                "run",
+                "-i",
+                "--rm",
+                "-e",
+                "GITHUB_PERSONAL_ACCESS_TOKEN",
+                "ghcr.io/github/github-mcp-server"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "XXX"
+            },
+            "disabled": false,
+            "autoApprove": []
+        },
+        "Fetch": {
+            "command": "docker",
+            "args": [
+                "run",
+                "-i",
+                "--rm",
+                "mcp/fetch"
+            ]
+        }
+    }
+}
+
+参考这个文件里的Fetch MCP，现在来给我们的MCP服务添加这个默认的MCP服务
+```
