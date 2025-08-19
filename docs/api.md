@@ -67,10 +67,9 @@ GET /conversations/detail
 #### 响应结果
 ```json
 {
-  "id": "会话ID",
+  "conversation_id": "会话ID",
   "title": "会话标题",
-  "model": "使用的模型",
-  "service": "服务商",
+  "user_id": "用户的ID",
   "created_at": "创建时间",
   "updated_at": "更新时间"
 }
@@ -79,10 +78,9 @@ GET /conversations/detail
 #### 响应示例
 ```json
 {
-  "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+  "conversation_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
   "title": "人工智能发展讨论",
-  "model": "deepseek-chat",
-  "service": "DeepSeek",
+  "user_id": "1234567890",
   "created_at": "2024-01-01T10:00:00Z",
   "updated_at": "2024-01-01T10:05:00Z"
 }
@@ -109,14 +107,14 @@ GET /conversations/history
   "conversation_id": "会话ID",
   "messages": [
     {
-      "id": 1,
+      "message_id": 1,
       "conversation_id": "会话ID",
       "role": "user",
       "content": "用户消息内容",
       "created_at": "消息创建时间"
     },
     {
-      "id": 2,
+      "message_id": 2,
       "conversation_id": "会话ID",
       "role": "assistant",
       "content": "助手回复内容",
@@ -132,14 +130,14 @@ GET /conversations/history
   "conversation_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
   "messages": [
     {
-      "id": 1,
+      "message_id": 1,
       "conversation_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
       "role": "user",
       "content": "你好，请介绍一下人工智能的发展历程",
       "created_at": "2024-01-01T10:00:00Z"
     },
     {
-      "id": 2,
+      "message_id": 2,
       "conversation_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
       "role": "assistant",
       "content": "人工智能的发展可以分为几个阶段...",

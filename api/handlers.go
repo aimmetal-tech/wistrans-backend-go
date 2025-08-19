@@ -53,7 +53,7 @@ func (h *Handlers) CreateConversation(c *gin.Context) {
 
 	// 创建会话对象
 	conversation := &models.Conversation{
-		ID: conversationID,
+		ConversationID: conversationID,
 	}
 
 	// 保存到数据库
@@ -66,7 +66,7 @@ func (h *Handlers) CreateConversation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id": conversation.ID,
+		"id": conversation.ConversationID,
 	})
 }
 

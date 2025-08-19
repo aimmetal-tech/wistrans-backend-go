@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/lib/pq"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 // DB 数据库连接实例
@@ -18,7 +18,7 @@ var DB *sql.DB
 func InitDB() error {
 	// 先从系统环境变量获取数据库URL
 	databaseURL := os.Getenv("DATABASE_URL")
-	
+
 	// 如果环境变量中没有，则从.env文件获取
 	if databaseURL == "" {
 		err := godotenv.Load()
@@ -27,11 +27,11 @@ func InitDB() error {
 		}
 		databaseURL = os.Getenv("DATABASE_URL")
 	}
-	
+
 	if databaseURL == "" {
 		return fmt.Errorf("未配置数据库URL")
 	}
-	
+
 	// 如果数据库URL中没有sslmode参数，则添加禁用SSL的参数
 	if !strings.Contains(databaseURL, "sslmode=") {
 		if strings.Contains(databaseURL, "?") {
@@ -40,27 +40,27 @@ func InitDB() error {
 			databaseURL += "?sslmode=disable"
 		}
 	}
-	
+
 	var err error
 	DB, err = sql.Open("postgres", databaseURL)
 	if err != nil {
 		return fmt.Errorf("无法连接数据库: %v", err)
 	}
-	
+
 	// 测试连接
 	err = DB.Ping()
 	if err != nil {
 		return fmt.Errorf("数据库连接失败: %v", err)
 	}
-	
+
 	log.Println("数据库连接成功")
-	
+
 	// 检查并创建表
 	err = createTables()
 	if err != nil {
 		return fmt.Errorf("创建表失败: %v", err)
 	}
-	
+
 	return nil
 }
 
@@ -69,10 +69,9 @@ func createTables() error {
 	// 创建 conversations 表
 	_, err := DB.Exec(`
 		CREATE TABLE IF NOT EXISTS conversations (
-			id TEXT PRIMARY KEY,
+			conversation_id TEXT PRIMARY KEY,
 			title TEXT,
-			model TEXT,
-			service TEXT,
+			user_id TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -80,12 +79,12 @@ func createTables() error {
 	if err != nil {
 		return fmt.Errorf("创建 conversations 表失败: %v", err)
 	}
-	
+
 	// 创建 messages 表
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS messages (
-			id SERIAL PRIMARY KEY,
-			conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE,
+			message_id SERIAL PRIMARY KEY,
+			conversation_id TEXT REFERENCES conversations(conversation_id) ON DELETE CASCADE,
 			role TEXT,
 			content TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -94,7 +93,7 @@ func createTables() error {
 	if err != nil {
 		return fmt.Errorf("创建 messages 表失败: %v", err)
 	}
-	
+
 	log.Println("数据库表检查完成")
 	return nil
 }

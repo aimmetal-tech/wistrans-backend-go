@@ -8,17 +8,16 @@ import (
 
 // Conversation 会话结构
 type Conversation struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Model     string    `json:"model"`
-	Service   string    `json:"service"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ConversationID string    `json:"conversation_id"`
+	Title          string    `json:"title"`
+	User_id        string    `json:"user_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // Message 消息结构
 type Message struct {
-	ID             int       `json:"id"`
+	MessageID      int       `json:"message_id"`
 	ConversationID string    `json:"conversation_id"`
 	Role           string    `json:"role"`
 	Content        string    `json:"content"`
